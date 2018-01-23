@@ -169,7 +169,7 @@ contract HomeBridge {
 
     /// Contract authorities.
     address[] public authorities;
-    
+
     // Token to Replicate Token Address mapping
     mapping (address => address) public foreignTokenToHomeTokens;
 
@@ -178,10 +178,10 @@ contract HomeBridge {
 
     /// List of authorities confirmed to set up ERC-20 token address
     mapping (address => address[]) public token_address;
-    
+
     /// Event created on money deposit.
     event TokenAddress(address token);
-    
+
     /// Pending signatures and authorities who confirmed them
     mapping (bytes32 => SignaturesCollection) signatures;
 
@@ -250,8 +250,8 @@ contract HomeBridge {
         require(Helpers.addressArrayContains(authorities, msg.sender));
         _;
     }
-    
-    
+
+
     /// Used to deposit money to the contract.
     ///
     /// deposit recipient (bytes20)
@@ -267,10 +267,11 @@ contract HomeBridge {
         deposits[hash].push(msg.sender);
         // TODO: this may cause troubles if requriedSignatures len is changed
         if (deposits[hash].length == requiredSignatures) {
-            ERC20(foreignTokenToHomeTokens[token]).transfer(recipient, value);
+            // Mint tokens here. Only address(this) can mint
+            ERC20(foreignTokenToHomeTokens[token]).mint(recipient, value);
             Deposit(recipient, value);
         }
-    }     
+    }
     /// Used to withdraw money from the contract.
     ///
     /// message contains:
@@ -310,7 +311,7 @@ contract HomeBridge {
 
         Withdraw(token, recipient, value);
     }
-    
+
     /// Transfer `value` from `msg.sender`s local balance (on `foreign` chain) to `recipient` on `home` chain.
     ///
     /// immediately decreases `msg.sender`s local balance.
@@ -321,9 +322,9 @@ contract HomeBridge {
     /// an authority will pick up `CollectedSignatures` an call `HomeBridge.withdraw`
     /// which transfers `value - relayCost` to `recipient` completing the transfer.
     function transferChainViaRelay(bytes chainId, address token, address recipient, uint value) public {
-        require(ERC20(token).allowance(msg.sender, this) >= value); 
+        require(ERC20(token).allowance(msg.sender, this) >= value);
         ERC20(token).transferFrom(msg.sender, this, value);
         Withdraw(chainId, token, recipient, value);
     }
-    
+
 }
